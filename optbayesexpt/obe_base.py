@@ -484,6 +484,7 @@ class OptBayesExpt(ParticlePDF):
         """
 
         utility = self.utility()
+        self.utility_stored = utility.copy()
         # Find the settings with the maximum utility
         # argmax returns an array of indices into the flattened array
         bestindex = np.argmax(utility)
@@ -518,6 +519,7 @@ class OptBayesExpt(ParticlePDF):
         """
 
         utility = (self.utility()) ** pickiness
+        self.utility_stored = utility.copy()
         # the exponent 'pickiness' is a tuning parameter
 
         utility /= np.sum(utility)
