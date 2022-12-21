@@ -199,12 +199,12 @@ class OptBayesExpt(ParticlePDF):
             @njit(cache=True, nogil=True)
             def _gauss_noise_likelihood(y_model, y_meas, sigma):
                 return np.exp(
-                    -((y_model - y_meas) / sigma) ** 2 / 2) / (sigma + 1e-16)
+                    -((y_model - y_meas) / (sigma + 1e-16)) ** 2 / 2) / (sigma + 1e-16)
         else:
             # No numba package installed?  No problem.
             def _gauss_noise_likelihood(y_model, y_meas, sigma):
                 return np.exp(
-                    -((y_model - y_meas) / sigma) ** 2 / 2) / (sigma + 1e-16)
+                    -((y_model - y_meas) / (sigma + 1e-16)) ** 2 / 2) / (sigma + 1e-16)
         self._gauss_noise_likelihood = _gauss_noise_likelihood
 
     def set_n_draws(self, n_draws=None):
