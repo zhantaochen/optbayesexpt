@@ -19,16 +19,12 @@ class MeasurementSimulator():
         noise_level (float): standard deviation of the added noise.
 
     """
-    def __init__(self, model_function, true_params, cons, noise_level, noise_type=None):
+    def __init__(self, model_function, true_params, cons, noise_level):
 
         self.model_function = model_function
         self.params = true_params
         self.cons = cons
         self.noise_level = noise_level
-        self.noise_type = noise_type
-        if self.noise_type is None:
-            self.noise_type = 'gauss'
-        # self.bkg_noise_level = bkg_noise_level
 
     def simdata(self, setting, params=None, noise_level=None):
         """ Simulate a measurement
@@ -39,7 +35,7 @@ class MeasurementSimulator():
                 instead of the initial values. (opt)
             noise_level (float): if not ``None``, temporarily used instead of
                 the initial value. (opt)
-
+                
         Returns:
             Simulated measurement value(s)
         """
@@ -50,19 +46,8 @@ class MeasurementSimulator():
             noise_level = self.noise_level
 
         y = np.array(self.model_function(setting, params, self.cons))
-        # measurement noise
-        if self.noise_type == 'gauss':
-            tmpnoise = rng.standard_normal(y.shape) * noise_level
-            yn = y + tmpnoise
-        elif self.noise_type == 'poisson':
-            yn = rng.poisson(y, y.shape) + rng.poisson(noise_level, y.shape)
-        else:
-            raise NameError("self.noise_type should either be 'gauss' or 'poisson'")
-        # background noise
-        # if self.bkg_noise_level is not None:
-        #     bkgnoise = rng.poisson(self.bkg_noise_level, y.shape)
-        # else:
-        #     bkgnoise = 0.
+        tmpnoise = rng.standard_normal(y.shape) * noise_level
+        yn = y + tmpnoise
 
         return yn
 
