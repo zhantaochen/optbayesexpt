@@ -253,17 +253,7 @@ class OptBayesExpt(ParticlePDF):
             raise SyntaxError(f'Unknown utility method: {utility_method}. '
                               f'Valid utility methods are{utilitymethods}')
 
-        selection_methods = ['optimal', 'good', 'random']
-        if selection_method == 'optimal':
-            self.get_setting = self.opt_setting
-        elif selection_method == 'good':
-            self.get_setting = self.good_setting
-        elif selection_method == 'random':
-            self.get_setting = self.random_setting
-        else:
-            raise SyntaxError(f'Unknown selection_method: {selection_method}.'
-                              f'Valid selection methods are'
-                              f' {selection_methods}')
+        self.set_selection_method(selection_method)
 
         # pre-compile some numeric routines using numba.njit
         if GOT_NUMBA and use_jit:
@@ -280,6 +270,20 @@ class OptBayesExpt(ParticlePDF):
                 return np.exp(
                     -((y_model - y_meas) / (sigma + 1e-16)) ** 2 / 2) / (sigma + 1e-16)
         self._gauss_noise_likelihood = _gauss_noise_likelihood
+
+    def set_selection_method(self, selection_method):
+        selection_methods = ['optimal', 'good', 'random']
+        self.selection_method = selection_method
+        if selection_method == 'optimal':
+            self.get_setting = self.opt_setting
+        elif selection_method == 'good':
+            self.get_setting = self.good_setting
+        elif selection_method == 'random':
+            self.get_setting = self.random_setting
+        else:
+            raise SyntaxError(f'Unknown selection_method: {selection_method}.'
+                              f'Valid selection methods are'
+                              f' {selection_methods}')
 
     def set_n_draws(self, n_draws=None):
         """Sets OptBayesExpt.N_DRAWS attribute.
