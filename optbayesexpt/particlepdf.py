@@ -129,11 +129,19 @@ class ParticlePDF:
             @njit([float64[:](float64[:], float64[:])], cache=True)
             def _normalized_product(wgts, lkl):
                 tmp = wgts * lkl
-                return tmp / np.sum(tmp)
+                tmp_sum = np.sum(tmp)
+                if tmp_sum == 0:
+                    return np.ones_like(wgts) / wgts.shape[0]
+                else:
+                    return tmp / tmp_sum
         else:
             def _normalized_product(wgts, lkl):
                 tmp = wgts * lkl
-                return tmp / np.sum(tmp)
+                tmp_sum = np.sum(tmp)
+                if tmp_sum == 0:
+                    return np.ones_like(wgts) / wgts.shape[0]
+                else:
+                    return tmp / tmp_sum
         self._normalized_product = _normalized_product
 
         try:

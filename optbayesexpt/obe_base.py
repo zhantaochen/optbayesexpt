@@ -273,12 +273,12 @@ class OptBayesExpt(ParticlePDF):
             @njit(cache=True, nogil=True)
             def _gauss_noise_likelihood(y_model, y_meas, sigma):
                 return np.exp(
-                    -((y_model - y_meas) / sigma) ** 2 / 2) / sigma
+                    -((y_model - y_meas) / (sigma + 1e-16)) ** 2 / 2) / (sigma + 1e-16)
         else:
             # No numba package installed?  No problem.
             def _gauss_noise_likelihood(y_model, y_meas, sigma):
                 return np.exp(
-                    -((y_model - y_meas) / sigma) ** 2 / 2) / sigma
+                    -((y_model - y_meas) / (sigma + 1e-16)) ** 2 / 2) / (sigma + 1e-16)
         self._gauss_noise_likelihood = _gauss_noise_likelihood
 
     def set_n_draws(self, n_draws=None):
@@ -658,6 +658,20 @@ class OptBayesExpt(ParticlePDF):
         utility = np.sum(np.log(1 + var_p / var_n), axis=0)
         return utility / cost
 
+    def reset_proposed_setting(self, ):
+        self.proposed_settings = {
+            "setting_val": [],
+            "setting_idx": [],
+            "setting_bin": np.zeros(self.setting_indices.shape)
+        }
+
+    def save_proposed_settings(self, setting, setting_idx):
+        if not hasattr(self, 'proposed_settings'):
+            self.reset_proposed_setting()
+        self.proposed_settings["setting_val"].append(setting)
+        self.proposed_settings["setting_idx"].append(setting_idx)
+        self.proposed_settings["setting_bin"][setting_idx] += 1
+
     def utility_full_kld(self):
         """
         Estimate the utility as a function of settings.
@@ -691,6 +705,7 @@ class OptBayesExpt(ParticlePDF):
         n_entropy = diffent(noisevalues, axis=0)
         return y_entropy - n_entropy
 
+
     def opt_setting(self):
         """Find the setting with maximum predicted impact on the parameter
         distribution.
@@ -707,6 +722,7 @@ class OptBayesExpt(ParticlePDF):
         """
 
         utility = self.utility()
+        self.utility_stored = utility.copy()
         # Find the settings with the maximum utility
         # argmax returns an array of indices into the flattened array
         bestindex = np.argmax(utility)
@@ -717,6 +733,7 @@ class OptBayesExpt(ParticlePDF):
         bestvalues = self.allsettings[:, bestindex]
 
         self.last_setting_index = bestindex
+        self.save_proposed_settings(tuple(bestvalues), bestindex)
         return tuple(bestvalues)
 
     def good_setting(self, pickiness=None):
@@ -743,6 +760,7 @@ class OptBayesExpt(ParticlePDF):
             pickiness = self.pickiness
 
         utility = (self.utility()) ** pickiness
+        self.utility_stored = utility.copy()
         # the exponent 'pickiness' is a tuning parameter
 
         utility /= np.sum(utility)
@@ -750,6 +768,7 @@ class OptBayesExpt(ParticlePDF):
         goodvalues = self.allsettings[:, goodindex]
 
         self.last_setting_index = goodindex
+        self.save_proposed_settings(tuple(goodvalues), goodindex)
         return tuple(goodvalues)
 
     def random_setting(self):
