@@ -785,9 +785,10 @@ class OptBayesExpt(ParticlePDF):
         Returns:
             A settings tuple.
         """
-        settingindex = rng.choice(self.setting_indices)
-        one_setting = self.allsettings[:, settingindex]
-        return one_setting
+        randindex = rng.choice(self.setting_indices)
+        randvalues = self.allsettings[:, randindex]
+        self.save_proposed_settings(tuple(randvalues), randindex)
+        return tuple(randvalues)
 
     def _model_output_len(self):
         # """Detect the number of model outputs
