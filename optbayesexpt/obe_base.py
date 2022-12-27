@@ -351,7 +351,7 @@ class OptBayesExpt(ParticlePDF):
         """
         return self._model_function(self.allsettings, oneparamset, self.cons)
 
-    def pdf_update(self, measurement_record, y_model_data=None):
+    def pdf_update(self, measurement_record, y_model_data=None, scale_factor=None):
         """
         Refines the parameters' probability distribution function given a
         measurement result.
@@ -383,6 +383,9 @@ class OptBayesExpt(ParticlePDF):
         # calculate the model for all values of the parameters
         if y_model_data is None:
             y_model_data = self.eval_over_all_parameters(onesetting)
+        
+        if scale_factor is not None:
+            y_model_data = scale_factor * y_model_data
 
         # Calculate the *likelihood* of measuring `measurmennt_result` for
         # all parameter combinations
