@@ -385,7 +385,7 @@ class OptBayesExpt(ParticlePDF):
             y_model_data = self.eval_over_all_parameters(onesetting)
         
         if scale_factor is not None:
-            y_model_data = scale_factor * y_model_data
+            y_model_data = tuple([scale_factor * y for y in y_model_data])
 
         # Calculate the *likelihood* of measuring `measurmennt_result` for
         # all parameter combinations
