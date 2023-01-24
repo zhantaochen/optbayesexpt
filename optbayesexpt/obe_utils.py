@@ -36,7 +36,7 @@ class MeasurementSimulator():
                 instead of the initial values. (opt)
             noise_level (float): if not ``None``, temporarily used instead of
                 the initial value. (opt)
-
+                
         Returns:
             Simulated measurement value(s)
         """
