@@ -253,17 +253,7 @@ class OptBayesExpt(ParticlePDF):
             raise SyntaxError(f'Unknown utility method: {utility_method}. '
                               f'Valid utility methods are{utilitymethods}')
 
-        selection_methods = ['optimal', 'good', 'random']
-        if selection_method == 'optimal':
-            self.get_setting = self.opt_setting
-        elif selection_method == 'good':
-            self.get_setting = self.good_setting
-        elif selection_method == 'random':
-            self.get_setting = self.random_setting
-        else:
-            raise SyntaxError(f'Unknown selection_method: {selection_method}.'
-                              f'Valid selection methods are'
-                              f' {selection_methods}')
+        self.set_selection_method(selection_method)
 
         # pre-compile some numeric routines using numba.njit
         if GOT_NUMBA and use_jit:
@@ -280,6 +270,20 @@ class OptBayesExpt(ParticlePDF):
                 return np.exp(
                     -((y_model - y_meas) / (sigma + 1e-16)) ** 2 / 2) / (sigma + 1e-16)
         self._gauss_noise_likelihood = _gauss_noise_likelihood
+
+    def set_selection_method(self, selection_method):
+        selection_methods = ['optimal', 'good', 'random']
+        self.selection_method = selection_method
+        if selection_method == 'optimal':
+            self.get_setting = self.opt_setting
+        elif selection_method == 'good':
+            self.get_setting = self.good_setting
+        elif selection_method == 'random':
+            self.get_setting = self.random_setting
+        else:
+            raise SyntaxError(f'Unknown selection_method: {selection_method}.'
+                              f'Valid selection methods are'
+                              f' {selection_methods}')
 
     def set_n_draws(self, n_draws=None):
         """Sets OptBayesExpt.N_DRAWS attribute.
@@ -347,7 +351,7 @@ class OptBayesExpt(ParticlePDF):
         """
         return self._model_function(self.allsettings, oneparamset, self.cons)
 
-    def pdf_update(self, measurement_record, y_model_data=None):
+    def pdf_update(self, measurement_record, y_model_data=None, scale_factor=None):
         """
         Refines the parameters' probability distribution function given a
         measurement result.
@@ -379,6 +383,9 @@ class OptBayesExpt(ParticlePDF):
         # calculate the model for all values of the parameters
         if y_model_data is None:
             y_model_data = self.eval_over_all_parameters(onesetting)
+        
+        if scale_factor is not None:
+            y_model_data = tuple([scale_factor * y for y in y_model_data])
 
         # Calculate the *likelihood* of measuring `measurmennt_result` for
         # all parameter combinations
@@ -781,9 +788,10 @@ class OptBayesExpt(ParticlePDF):
         Returns:
             A settings tuple.
         """
-        settingindex = rng.choice(self.setting_indices)
-        one_setting = self.allsettings[:, settingindex]
-        return one_setting
+        randindex = rng.choice(self.setting_indices)
+        randvalues = self.allsettings[:, randindex]
+        self.save_proposed_settings(tuple(randvalues), randindex)
+        return tuple(randvalues)
 
     def _model_output_len(self):
         # """Detect the number of model outputs
