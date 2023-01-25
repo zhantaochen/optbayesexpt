@@ -142,7 +142,7 @@ class ParticlePDF:
                     return np.ones_like(wgts) / wgts.shape[0]
                 else:
                     return tmp / tmp_sum
-        self._normalized_product = _normalized_product
+        self._normalized_product = _proto_normalized_product
 
         try:
             self.rng = np.random.default_rng()
