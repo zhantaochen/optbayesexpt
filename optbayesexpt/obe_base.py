@@ -155,12 +155,11 @@ class OptBayesExpt(ParticlePDF):
                  constants, n_draws=DEFAULT_N_DRAWS, choke=None,
                  use_jit=True, utility_method='variance_approx',
                  selection_method='optimal', pickiness=15,
-                 default_noise_std=1.0, model_uncertainty=False,
+                 default_noise_std=1.0,
                  **kwargs):
         ParticlePDF.__init__(self, parameter_samples, use_jit=use_jit,
                              **kwargs)
-        
-        self.model_uncertainty = model_uncertainty
+
         #: function: equal to the measurement model parameter above.
         #: with added text
         self.model_function = measurement_model
@@ -214,8 +213,8 @@ class OptBayesExpt(ParticlePDF):
         # the same way, make single-channel model outputs iterable over
         # channels.
         if self.n_channels == 1:
-            def wrapped_function(s, p, c, **kwargs):
-                y = measurement_model(s, p, c, **kwargs)
+            def wrapped_function(s, p, c):
+                y = measurement_model(s, p, c)
                 return (y,)
 
             self._model_function = wrapped_function
@@ -322,10 +321,7 @@ class OptBayesExpt(ParticlePDF):
             (:obj:`ndarray`) array of model values with dimensions of one
             element of :obj:`self.allparams`.
         """
-        if not self.model_uncertainty:
-            return self._model_function(onesettingset, self.parameters, self.cons)
-        else:
-            return self._model_function(onesettingset, self.parameters, self.cons, par_weights=self.particle_weights)
+        return self._model_function(onesettingset, self.parameters, self.cons)
 
     def eval_over_all_settings(self, oneparamset):
         """Evaluates the experimental model.
