@@ -228,10 +228,12 @@ class OptBayesExpt(ParticlePDF):
         self.default_noise_std = np.ones((self.n_channels, 1)) * \
                                  default_noise_std
 
-        utilitymethods = ['variance_approx', 'pseudo_utility',
+        utilitymethods = ['variance_full', 'variance_approx', 'pseudo_utility',
                                'full_kld_utility', 'max_min']
         if utility_method == 'variance_approx':
             _utility = self.utility_variance
+        elif utility_method == 'variance_full':
+            _utility = self.utility_variance_full
         elif utility_method == 'pseudo_utility':
             _utility = self.utility_pseudo
         elif utility_method == 'max_min':
@@ -495,6 +497,38 @@ class OptBayesExpt(ParticlePDF):
         yvar = np.var(self.utility_y_space, axis=0)
         return yvar
 
+    def yvar_from_parameter_full(self):
+        """Models the measurement variance solely due to parameter
+        distributions.
+
+        Evaluates the effect of the distribution
+        of parameter values on the distribution of model outputs for every
+        setting combination. This calculation is done as part of the
+        *utility* calculation as an approximation to the information
+        entropy. For each of ``self.N_DRAWS`` samples from the parameter
+        distribution, this method models a noise-free experimental output
+        for all setting combinations and returns the variance of the model
+        values for each setting combination.
+
+        Returns:
+            :obj:`ndarray` with shape of :code:`self.setting_indices`
+        """
+
+        # paramsets = self.randdraw(self.N_DRAWS).T
+
+        # fill the model results for each drawn parameter set
+        # for i, oneparamset in enumerate(paramsets):
+            # self.utility_y_space[i] = self.eval_over_all_settings(oneparamset)
+
+        # output of dimension [N_particles, N_settings]
+        self.utility_y_space = self.eval_over_all_settings(self.parameters)[0]
+        self.utility_y_space = np.einsum("ps, p -> s", self.utility_y_space, self.particle_weights)
+
+        # Evaluate how much the model varies at each setting
+        # calculate the variance of results for each setting
+        yvar = np.var(self.utility_y_space, axis=0)
+        return yvar
+
     def yvar_from_entropy(self):
         """Models the entropy of the model values due to the
         parameter distributions
@@ -632,6 +666,35 @@ class OptBayesExpt(ParticlePDF):
         utility_sum = np.sum(var_p / var_n, axis=0)
         return utility_sum / cost
 
+    def utility_variance_full(self):
+        """ Estimate the utility as a function of settings.
+
+        The *utility* is the predicted benefit/cost ratio of a new
+        measurement where the benefit is given in terms of a change in the
+        information entropy of the parameter distribution. This algorithm
+        corresponds to the "variance algorithm" of [#f1]_.
+
+        In this algorithm, we use the logarithm of variance as an
+        approximation for the information entropy.  The variance of model
+        outputs produced by :code:`N_DRAWS` samples of the parameter
+        distribution and the variance of the measurement noise are calculated
+        separately.
+
+        Execution of ``utility_variance`` is faster than ``utility_variance``
+        and ``utility_pseudo`` and the decision quality is very similar to
+        ``utility_KLD``.
+
+        Returns:
+            Approximate utility as an :obj:`ndarray` with dimensions of
+            :code:`self.setting_indices`.
+        """
+        var_p = self.yvar_from_parameter_full()
+        var_n = self.yvar_noise_model()
+        cost = self.cost_estimate()
+        # utility_v = np.sum(np.log(1 + var_p / var_n), axis=0)
+        utility_v = np.sum(var_p / var_n, axis=0)
+        return utility_v / cost
+    
     def utility_variance(self):
         """ Estimate the utility as a function of settings.
 
