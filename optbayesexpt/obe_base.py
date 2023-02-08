@@ -264,7 +264,7 @@ class OptBayesExpt(ParticlePDF):
         self._gauss_noise_likelihood = _gauss_noise_likelihood
 
     def set_selection_method(self, selection_method):
-        selection_methods = ['optimal', 'good', 'random']
+        selection_methods = ['optimal', 'good', 'random', 'sequential']
         self.selection_method = selection_method
         if selection_method == 'optimal':
             self.get_setting = self.opt_setting
@@ -272,6 +272,8 @@ class OptBayesExpt(ParticlePDF):
             self.get_setting = self.good_setting
         elif selection_method == 'random':
             self.get_setting = self.random_setting
+        elif selection_method == 'sequential':
+            self.get_setting = self.sequential_setting
         else:
             raise SyntaxError(f'Unknown selection_method: {selection_method}.'
                               f'Valid selection methods are'
@@ -877,6 +879,26 @@ class OptBayesExpt(ParticlePDF):
         self.save_proposed_settings(tuple(goodvalues), goodindex)
         return tuple(goodvalues)
 
+    def sequential_setting(self):
+        """
+        Pick a random setting for the next measurement
+
+        Randomly selects a setting from all possible
+        setting combinations. Selected by ``selection_method='random'``
+        argument.
+
+        Returns:
+            A settings tuple.
+        """
+        utility = self.utility()
+        self.utility_stored = utility.copy()
+
+        settingindex = self.last_setting_index
+        one_setting = self.allsettings[:, settingindex]
+        self.save_proposed_settings(tuple(one_setting), settingindex)
+        self.last_setting_index = (self.last_setting_index + 1) % len(self.setting_indices)
+        return one_setting
+
     def random_setting(self):
         """
         Pick a random setting for the next measurement
@@ -888,6 +910,9 @@ class OptBayesExpt(ParticlePDF):
         Returns:
             A settings tuple.
         """
+        utility = self.utility()
+        self.utility_stored = utility.copy()
+        
         settingindex = rng.choice(self.setting_indices)
         self.last_setting_index = settingindex
         one_setting = self.allsettings[:, settingindex]
