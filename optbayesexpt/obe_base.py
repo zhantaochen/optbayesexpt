@@ -491,8 +491,11 @@ class OptBayesExpt(ParticlePDF):
         paramsets = self.randdraw(self.N_DRAWS).T
 
         # fill the model results for each drawn parameter set
-        for i, oneparamset in enumerate(paramsets):
-            self.utility_y_space[i] = self.eval_over_all_settings(oneparamset)
+        # for i, oneparamset in enumerate(paramsets):
+        #     self.utility_y_space[i] = self.eval_over_all_settings(oneparamset)
+
+        # faster alternative...
+        self.utility_y_space = self.eval_over_all_settings(paramsets.T)[0][:,None,:]
 
         # Evaluate how much the model varies at each setting
         # calculate the variance of results for each setting
@@ -523,12 +526,14 @@ class OptBayesExpt(ParticlePDF):
             # self.utility_y_space[i] = self.eval_over_all_settings(oneparamset)
 
         # output of dimension [N_particles, N_settings]
-        self.utility_y_space = self.eval_over_all_settings(self.parameters)[0]
-        self.utility_y_space = np.einsum("ps, p -> s", self.utility_y_space, self.particle_weights)
+        utility_y_space_full = self.eval_over_all_settings(self.parameters)[0]
+        utility_y_space_mean = np.mean(utility_y_space_full, axis=0, keepdims=True)
+        yvar = np.average(
+            (utility_y_space_full-utility_y_space_mean)**2, weights=self.particle_weights, axis=0)[None]
 
         # Evaluate how much the model varies at each setting
         # calculate the variance of results for each setting
-        yvar = np.var(self.utility_y_space, axis=0)
+        # yvar = np.var(self.utility_y_space, axis=0)
         return yvar
 
     def yvar_from_entropy(self):
