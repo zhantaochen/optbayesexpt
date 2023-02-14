@@ -895,8 +895,8 @@ class OptBayesExpt(ParticlePDF):
         Returns:
             A settings tuple.
         """
-        utility = self.utility()
-        self.utility_stored = utility.copy()
+        # utility = self.utility()
+        # self.utility_stored = utility.copy()
 
         settingindex = self.last_setting_index
         one_setting = self.allsettings[:, settingindex]
@@ -915,8 +915,8 @@ class OptBayesExpt(ParticlePDF):
         Returns:
             A settings tuple.
         """
-        utility = self.utility()
-        self.utility_stored = utility.copy()
+        # utility = self.utility()
+        # self.utility_stored = utility.copy()
         
         settingindex = rng.choice(self.setting_indices)
         self.last_setting_index = settingindex
