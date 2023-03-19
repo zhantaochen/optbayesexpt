@@ -12,4 +12,5 @@ localstuff/
 build/
 dist/
 _build/
+.eggs
 

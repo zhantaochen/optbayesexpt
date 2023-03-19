@@ -55,8 +55,13 @@ class MeasurementSimulator():
             tmpnoise = rng.standard_normal(y.shape) * noise_level
             yn = y + tmpnoise
         elif mode == 'poisson':
-            yn = rng.poisson(y / noise_level) * noise_level
-
+            lam = y / noise_level
+            try:
+                yn = rng.poisson(lam) * noise_level
+            except ValueError:
+                yn = (lam + rng.standard_normal(y.shape) * np.sqrt(lam)) * noise_level
+                print(f"ValueError Encountered with large lam {lam}; replaced poisson with gaussian.")
+                
         return yn
 
 
