@@ -400,11 +400,11 @@ class OptBayesExpt(ParticlePDF):
         # Calculate the *likelihood* of measuring `measurmennt_result` for
         # all parameter combinations
         # Product of likelihoods from the different channels
-        likyhd = self.likelihood(y_model_data, measurement_record)
+        self.curr_likyhd = self.likelihood(y_model_data, measurement_record)
 
         # update the pdf using a method inherited from ParticlePDF()
 
-        self.bayesian_update(likyhd)
+        self.bayesian_update(self.curr_likyhd)
         self.parameters = self.particles
         if self.just_resampled:
             self.enforce_parameter_constraints()
