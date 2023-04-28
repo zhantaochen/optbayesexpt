@@ -155,7 +155,7 @@ class OptBayesExpt(ParticlePDF):
                  constants, n_draws=DEFAULT_N_DRAWS, choke=None,
                  use_jit=True, utility_method='variance_approx',
                  selection_method='optimal', pickiness=15,
-                 default_noise_std=1.0,
+                 default_noise_std=1.0, noise_level_for_util_kld_poisson=1.0,
                  **kwargs):
         ParticlePDF.__init__(self, parameter_samples, use_jit=use_jit,
                              **kwargs)
@@ -229,7 +229,7 @@ class OptBayesExpt(ParticlePDF):
                                  default_noise_std
 
         utilitymethods = ['variance_full', 'variance_approx', 'pseudo_utility',
-                               'full_kld_utility', 'max_min']
+                               'full_kld_utility', 'full_kld_utility_poisson', 'max_min']
         if utility_method == 'variance_approx':
             _utility = self.utility_variance
         elif utility_method == 'variance_full':
@@ -240,6 +240,9 @@ class OptBayesExpt(ParticlePDF):
             _utility = self.utility_max_min
         elif utility_method == 'full_kld_utility':
             _utility = self.utility_full_kld
+        elif utility_method == 'full_kld_utility_poisson':
+            _utility = self.utility_full_kld_poisson
+            self.noise_level_for_util_kld_poisson = noise_level_for_util_kld_poisson
         else:
             raise SyntaxError(f'Unknown utility method, {utility_method}. '
                               f'Valid utility methods are: {utilitymethods}')
@@ -812,6 +815,36 @@ class OptBayesExpt(ParticlePDF):
         # return y_entropy - n_entropy
         return np.exp(y_entropy - n_entropy) - 1.0
 
+    def utility_full_kld_poisson(self):
+        """
+        Estimate the utility as a function of settings.
+
+        Used in selecting measurement settings. The *utility* is the
+        predicted benefit/cost ratio of a new measurement where the benefit
+        is given in terms of a change in the information entropy of the
+        parameter distribution. This algorithm
+        corresponds to the "full-KLD algorithm" of [#f1]_.
+
+        Among the provided utility algorithms, ``utility_KLD`` comes closest to
+        the information-theoretic analytical result.
+
+        Returns:
+            Approximate utility as an :obj:`ndarray` with dimensions of
+            :code:`self.setting_indices`.
+        """
+        # print(f"using new utility with noise_level {self.noise_level_for_util_kld_poisson}")
+        utility_y_space = self.eval_over_all_settings(self.parameters)[0]
+        lam = utility_y_space / self.noise_level_for_util_kld_poisson
+        noisy_utility_y_space = rng.poisson(lam) * self.noise_level_for_util_kld_poisson
+        noisevalues = noisy_utility_y_space - utility_y_space
+        y_entropy = diffent(noisy_utility_y_space, axis=0)
+        n_entropy = diffent(noisevalues, axis=0)
+        # y_ent_infmask = np.isinf(y_entropy)
+        # n_ent_infmask = np.isinf(n_entropy)
+        # y_entropy[y_ent_infmask] = y_entropy[~y_ent_infmask].min() - 1.0
+        # n_entropy[y_ent_infmask] = n_entropy[~n_ent_infmask].min() - 1.0
+        return np.exp(y_entropy - n_entropy) - 1.0
+    
     def get_setting(self):
         """Selects settings for the next measurement.
 
